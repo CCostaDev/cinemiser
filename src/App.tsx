@@ -96,6 +96,16 @@ function App() {
     }
   }
 
+  function resetFilters() {
+    setSelectedGenreIds([]);
+    setMinRating(7);
+    setMaxRuntime(120);
+    setYearsBack("any");
+    setMovie(null);
+    setError(null);
+    setIsLoading(false);
+  }
+
   const backdropUrl = movie
     ? getPosterUrl(movie.backdrop_path ?? movie.poster_path, "w1280")
     : null;
@@ -124,6 +134,113 @@ function App() {
           >
             Find a movie
           </button>
+
+          <section className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 md:p-5 space-y-4">
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-300">
+                Filters
+              </h2>
+              <button
+                type="button"
+                className="text-xs text-slate-400 hover:text-slate-200"
+                onClick={resetFilters}
+              >
+                Reset
+              </button>
+            </div>
+
+            {/* Rating + runtime + years */}
+            <div className="grid gap-4 md:grid-cols-3">
+              {/* Min rating */}
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-slate-300">
+                  Minimum rating:{" "}
+                  <span className="font-semibold">{minRating}</span>
+                </label>
+                <input
+                  type="range"
+                  min={0}
+                  max={10}
+                  step={0.5}
+                  value={minRating}
+                  onChange={(e) => setMinRating(Number(e.target.value))}
+                  className="w-full"
+                />
+                <p className="text-[11px] text-slate-500">
+                  From 0 to 10 (TMDB score)
+                </p>
+              </div>
+
+              {/* Max runtime */}
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-slate-300">
+                  Max runtime (min):{" "}
+                  <span className="font-semibold">{maxRuntime}</span>
+                </label>
+                <input
+                  type="range"
+                  min={60}
+                  max={240}
+                  step={10}
+                  value={maxRuntime}
+                  onChange={(e) => setMaxRuntime(Number(e.target.value))}
+                  className="w-full"
+                />
+                <p className="text-[11px] text-slate-500">
+                  Shorter films → slide left
+                </p>
+              </div>
+
+              {/* Years back */}
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-slate-300">
+                  Released within
+                </label>
+                <select
+                  value={yearsBack}
+                  onChange={(e) =>
+                    setYearsBack(e.target.value as typeof yearsBack)
+                  }
+                  className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/40"
+                >
+                  <option value="any">Any time</option>
+                  <option value="1">Last 1 year</option>
+                  <option value="3">Last 3 years</option>
+                  <option value="5">Last 5 years</option>
+                  <option value="10">Last 10 years</option>
+                </select>
+                <p className="text-[11px] text-slate-500">
+                  We convert this to a date for TMDB.
+                </p>
+              </div>
+            </div>
+
+            {/* Genre chips */}
+            <div className="space-y-2">
+              <p className="text-xs font-medium text-slate-300">Genres</p>
+              <div className="flex flex-wrap gap-2">
+                {genres.map((genre) => {
+                  const isSelected = selectedGenreIds.includes(genre.id);
+
+                  return (
+                    <button
+                      key={genre.id}
+                      type="button"
+                      onClick={() => toggleGenre(genre.id)}
+                      className={
+                        "rounded-full border px-3 py-1 text-xs transition " +
+                        (isSelected
+                          ? "border-indigo-400 bg-indigo-500/20 text-indigo-200"
+                          : "border-slate-700 bg-slate-950 text-slate-200 hover:border-indigo-400")
+                      }
+                    >
+                      {genre.name}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </section>
 
           {isLoading && (
             <p className="text-sm text-slate-400">Finding something…</p>
