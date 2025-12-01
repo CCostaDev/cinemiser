@@ -26,9 +26,20 @@ export async function discoverMovies(filters: DiscoverFilters) {
       "vote_average.gte": filters.minRating,
       "with_runtime.lte": filters.maxRuntime,
       "primary_release_date.gte": filters.fromDate,
-      include_adult: true,
+      include_adult: false,
       language: "en-GB",
       sort_by: "popularity.desc",
+    },
+  });
+
+  return response.data;
+}
+
+export async function getMovieDetails(id: number) {
+  const response = await tmdb.get(`/movie/${id}`, {
+    params: {
+      append_to_response: "credits,videos",
+      language: "en-GB",
     },
   });
 

@@ -1,5 +1,10 @@
 import { useEffect, useState } from "react";
-import { getGenres, discoverMovies, getPosterUrl } from "./api/tmdb";
+import {
+  getGenres,
+  discoverMovies,
+  getPosterUrl,
+  getMovieDetails,
+} from "./api/tmdb";
 
 function App() {
   const [genres, setGenres] = useState<{ id: number; name: string }[]>([]);
@@ -9,6 +14,7 @@ function App() {
   const [yearsBack, setYearsBack] = useState<"any" | "1" | "3" | "5" | "10">(
     "any"
   );
+  const [showMore, setShowMore] = useState(false);
 
   type MovieSummary = {
     id: number;
@@ -19,6 +25,11 @@ function App() {
     vote_average: number;
     release_date: string;
     genre_ids?: number[];
+    runtime?: number;
+    tagline?: string | null;
+    director?: string | null;
+    cast?: string[];
+    trailerUrl?: string | null;
   };
 
   const [movie, setMovie] = useState<MovieSummary | null>(null);
@@ -50,6 +61,7 @@ function App() {
     try {
       setIsLoading(true);
       setError(null);
+      setShowMore(false);
 
       // 1. build genre string: "1,6,7"
       const withGenres =
@@ -87,7 +99,39 @@ function App() {
       const randomIndex = Math.floor(Math.random() * results.length);
       const randomMovie = results[randomIndex];
 
-      setMovie(randomMovie);
+      // 5. fetch details
+      const details = await getMovieDetails(randomMovie.id);
+
+      // 5.1 director
+      const director =
+        details.credits?.crew?.find((person: any) => person.job === "Director")
+          ?.name ?? null;
+
+      // 5.2 top 3 cast names
+      const cast =
+        details.credits?.cast?.slice(0, 3).map((person: any) => person.name) ??
+        [];
+
+      // 5.3 trailer URL from videos
+      const trailer = details.videos?.results?.find(
+        (video: any) => video.site === "YouTube" && video.type === "Trailer"
+      );
+      const trailerUrl = trailer
+        ? `https://www.youtube.com/watch?v=${trailer.key}`
+        : null;
+
+      // 6. build combined movie object
+      const enrichedMovie: MovieSummary = {
+        ...randomMovie,
+        backdrop_path: details.backdrop_path ?? randomMovie.backdrop_path,
+        runtime: details.runtime,
+        tagline: details.tagline,
+        director,
+        cast,
+        trailerUrl,
+      };
+
+      setMovie(enrichedMovie);
     } catch (err) {
       console.error(err);
       setError("Something went wrong while fetching a movie.");
@@ -116,10 +160,13 @@ function App() {
       {backdropUrl && (
         <div className="pointer-events-none absolute inset-0 z-0">
           <div
-            className="h-full w-full bg-cover bg-center blur-2x1 opacity-40"
-            style={{ backgroundImage: `url(${backdropUrl})` }}
+            className="h-full w-full bg-cover bg-center blur-x1 opacity-0 transition-opacity duration-700"
+            style={{
+              backgroundImage: `url(${backdropUrl})`,
+              opacity: backdropUrl ? 0.5 : 0, // fade in to 0.5
+            }}
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-slate-950/90 via-slate-950/95 to-slate-950" />
+          <div className="absolute inset-0 bg-slate-950/70" />
         </div>
       )}
 
@@ -243,13 +290,29 @@ function App() {
           </section>
 
           {isLoading && (
-            <p className="text-sm text-slate-400">Finding something…</p>
+            <div className="mt-8 rounded-2x1 border border-slate-800 bg-slate-900/60 p-4 md:p-6 animate-pulse shadow-1g shadow-black/20">
+              <div className="flex flex-col gap-4 md:flex-row">
+                <div className="mx-auto w-full max-w-xs md:mx-0 md:w-1/3">
+                  <div className="h-64 w-full rounded-x1 bg-slate-800" />
+                </div>
+                <div className="flex-1 space-y-3">
+                  <div className="h-6 w-2/3 rounded bg-slate-800" />
+                  <div className="h-4 w-1/3 rounded bg-slate-800" />
+                  <div className="h-4 w-1/2 rounded bg-slate-800" />
+                  <div className="mt-4 space-y-2">
+                    <div className="h-3 w-full rounded bg-slate-800" />
+                    <div className="h-3 w-full rounded bg-slate-800" />
+                    <div className="h-3 w-5/6 rounded bg-slate-800" />
+                  </div>
+                </div>
+              </div>
+            </div>
           )}
 
           {error && <p className="text-sm text-red-400">{error}</p>}
 
-          {movie && !error && (
-            <div className="mt-8 rounded-2xl border border-slate-800 bg-slate-900/60 p-4 md:p-6">
+          {!isLoading && movie && !error && (
+            <div className="mt-8 rounded-2xl border border-slate-800 bg-slate-900/60 p-4 md:p-6 opacity-0 animate-fade-in">
               <div className="flex flex-col gap-4 md:flex-row">
                 {/* Poster column */}
                 <div className="mx-auto w-full max-w-xs md:mx-0 md:w-1/3">
@@ -284,8 +347,33 @@ function App() {
                     {/* Rating */}
                     <p className="mt-1 text-sm text-slate-300">
                       ⭐ {movie.vote_average.toFixed(1)}
+                      {movie.runtime && (
+                        <span className="ml-2 text-slate-400">
+                          • {movie.runtime} min
+                        </span>
+                      )}
                     </p>
+
+                    {/* Tagline */}
+                    {movie.tagline && (
+                      <p className="text-sm italic text-slate-400 mt-1">
+                        "{movie.tagline}"
+                      </p>
+                    )}
                   </div>
+
+                  {movie.trailerUrl && (
+                    <div className="mt-4">
+                      <a
+                        href={movie.trailerUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-2 rounded-xl bg-red-600 px-4 py-2 text-sm font-medium text-white shadow hover:bg-red-500"
+                      >
+                        Watch trailer
+                      </a>
+                    </div>
+                  )}
 
                   {/* Overview block at the bottom */}
                   <div className="mt-auto space-y-1">
@@ -293,6 +381,31 @@ function App() {
                       Overview
                     </h3>
                     <p className="text-sm text-slate-400">{movie.overview}</p>
+                    <button
+                      type="button"
+                      onClick={() => setShowMore((prev) => !prev)}
+                      className="mt-3 text-xs font-medium text-indigo-400 hover:text-indigo-300"
+                    >
+                      {" "}
+                      {showMore ? "Hide details" : "More info"}
+                    </button>
+
+                    {showMore && (
+                      <div className="mt-3 space-y-1 text-sm text-slate-300 animate-fade-in">
+                        {movie.director && (
+                          <p>
+                            <span className="font-semibold">Director:</span>{" "}
+                            {movie.director}
+                          </p>
+                        )}
+                        {movie.cast && movie.cast.length > 0 && (
+                          <p>
+                            <span className="font-semibold">Cast:</span>{" "}
+                            {movie.cast.join(", ")}
+                          </p>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
