@@ -15,6 +15,7 @@ function App() {
     "any"
   );
   const [showMore, setShowMore] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
 
   type MovieSummary = {
     id: number;
@@ -62,6 +63,7 @@ function App() {
       setIsLoading(true);
       setError(null);
       setShowMore(false);
+      setImageLoaded(false);
 
       // 1. build genre string: "1,6,7"
       const withGenres =
@@ -155,14 +157,20 @@ function App() {
     : null;
 
   const movieRef = useRef<HTMLDivElement | null>(null);
+
   useEffect(() => {
-    if (movieRef.current && movie && !isLoading && !error) {
-      movieRef.current.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-      });
-    }
-  }, [movie, isLoading, error]);
+    if (!movieRef.current || !movie || !imageLoaded) return;
+
+    if (window.innerWidth >= 1080) return;
+
+    const rect = movieRef.current.getBoundingClientRect();
+    const absoluteTop = window.scrollY + rect.top;
+
+    window.scrollTo({
+      top: absoluteTop,
+      behavior: "smooth",
+    });
+  }, [movie, imageLoaded]);
 
   return (
     <div className="relative min-h-screen bg-slate-950 text-slate-50 px-4 py-8 overflow-hidden">
@@ -334,6 +342,7 @@ function App() {
                       src={getPosterUrl(movie.poster_path)!}
                       alt={movie.title}
                       className="w-full rounded-xl border border-slate-800 shadow-md"
+                      onLoad={() => setImageLoaded(true)}
                     />
                   )}
                 </div>
