@@ -5,17 +5,18 @@ _A smart movie randomiser powered by TMDB._
 Cinemiser helps you discover movies when you don't know what to watch.
 Choose your filters, and Cinemiser will fetch a random movie that fits your vibe.
 
-Built with **React, TypeScript, TailwindCSS and Axios**, this app focuses on clean UI, smooth feedback, and strong real world API handling. 
+Built with **React, TypeScript, TailwindCSS and Axios**, this app focuses on clean UI, smooth feedback, and strong real world API handling.
 
 ---
 
- **🎥 Demo**
+**🎥 Live Demo**
 
-https://github.com/user-attachments/assets/7d90e791-1221-4ab6-90c5-e8e85833aa8c
+cinemiser.vercel.app
 
 ---
 
 ✨ **Features**
+
 - Genre filtering (using real time TMDB genre data)
 - Minimum rating slider (0-10)
 - Maximum runtime slider (60-240 min)
@@ -41,16 +42,18 @@ https://github.com/user-attachments/assets/7d90e791-1221-4ab6-90c5-e8e85833aa8c
 🛠 **Tech Stack**
 
 **Frontend**
+
 - React (Vite)
 - TypeScript
 - TailwindCSS
 - Axios
 
 **API**
+
 - TMDB REST API
-  - ``` /discover/movie ```
-  - ``` /genre/movie/list ```
-  - ``` /movie/{id}``` + ``` append_to_response=credits,videos ```
+  - `/discover/movie`
+  - `/genre/movie/list`
+  - ` /movie/{id}` + `append_to_response=credits,videos`
 
 ---
 
@@ -59,21 +62,24 @@ Cinemiser uses a clean, modular API layer with Axios:
 
 **1. Axios Instance**
 A single configured Axios client keeps the code DRY:
+
 - Base URL
-- API key injected from ```.env```
+- API key injected from `.env`
 - Shared params
 
 **2. Discover Movies (filters -> random pick)**
 User-selected filters are transformed into TMDB parameters:
-- ``` with_genres ```
-- ``` vote_average.gte ```
-- ``` with_runtime.lte ```
-- ``` primary_release_date.gte ```
+
+- `with_genres`
+- `vote_average.gte`
+- `with_runtime.lte`
+- `primary_release_date.gte`
 
 Then a random movie is selected from the results.
 
 **3. Movie Details**
 Once a movie is picked, Cinemiser fetches enriched data:
+
 - runtime
 - tagline
 - director (from credits)
@@ -83,12 +89,14 @@ Once a movie is picked, Cinemiser fetches enriched data:
 
 **4. UI Rendering**
 React state holds:
+
 - filters
 - isLoading
 - movie
 - showMore
 
 TailwindCSS handles spacing, visuals, and animations:
+
 - skeleton state
 - fade-in card
 - blurred backdrop
@@ -96,6 +104,7 @@ TailwindCSS handles spacing, visuals, and animations:
 ---
 
 🧭 **How to Use**
+
 1. Pick your filters (rating, runtime, genres, years).
 2. Click **Find a movie**.
 3. View the movie details and poster.
@@ -108,6 +117,3 @@ TailwindCSS handles spacing, visuals, and animations:
 🙏 **Acknowledgements**
 
 This product uses the TMDB API but is not endorsed or certified by TMDB.
-
-
-
