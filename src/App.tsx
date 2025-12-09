@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import {
   getGenres,
   discoverMovies,
@@ -154,13 +154,23 @@ function App() {
     ? getPosterUrl(movie.backdrop_path ?? movie.poster_path, "w1280")
     : null;
 
+  const movieRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (movieRef.current && movie && !isLoading && !error) {
+      movieRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }
+  }, [movie, isLoading, error]);
+
   return (
     <div className="relative min-h-screen bg-slate-950 text-slate-50 px-4 py-8 overflow-hidden">
       {/* Background layer */}
       {backdropUrl && (
         <div className="pointer-events-none absolute inset-0 z-0">
           <div
-            className="h-full w-full bg-cover bg-center blur-x1 opacity-0 transition-opacity duration-700"
+            className="h-full w-full bg-cover bg-center opacity-0 transition-opacity duration-700"
             style={{
               backgroundImage: `url(${backdropUrl})`,
               opacity: backdropUrl ? 0.5 : 0, // fade in to 0.5
@@ -171,7 +181,7 @@ function App() {
       )}
 
       {/* Foreground content */}
-      <div className="relative z-10 mx-auto max-w-4x1 space-y-6 px-4 py-8">
+      <div className="relative z-10 mx-auto max-w-4xl space-y-6 px-4 py-8">
         <div className="mx-auto max-w-2xl space-y-6 text-center">
           <h1 className="text-3xl font-bold">Cinemiser 🎬</h1>
 
@@ -290,10 +300,10 @@ function App() {
           </section>
 
           {isLoading && (
-            <div className="mt-8 rounded-2x1 border border-slate-800 bg-slate-900/60 p-4 md:p-6 animate-pulse shadow-1g shadow-black/20">
+            <div className="mt-8 rounded-2xl border border-slate-800 bg-slate-900/60 p-4 md:p-6 animate-pulse shadow-lg shadow-black/20">
               <div className="flex flex-col gap-4 md:flex-row">
                 <div className="mx-auto w-full max-w-xs md:mx-0 md:w-1/3">
-                  <div className="h-64 w-full rounded-x1 bg-slate-800" />
+                  <div className="h-64 w-full rounded-xl bg-slate-800" />
                 </div>
                 <div className="flex-1 space-y-3">
                   <div className="h-6 w-2/3 rounded bg-slate-800" />
@@ -312,7 +322,10 @@ function App() {
           {error && <p className="text-sm text-red-400">{error}</p>}
 
           {!isLoading && movie && !error && (
-            <div className="mt-8 rounded-2xl border border-slate-800 bg-slate-900/60 p-4 md:p-6 opacity-0 animate-fade-in">
+            <div
+              ref={movieRef}
+              className="mt-8 rounded-2xl border border-slate-800 bg-slate-900/60 p-4 md:p-6 opacity-0 animate-fade-in"
+            >
               <div className="flex flex-col gap-4 md:flex-row">
                 {/* Poster column */}
                 <div className="mx-auto w-full max-w-xs md:mx-0 md:w-1/3">
