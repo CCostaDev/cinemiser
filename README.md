@@ -11,7 +11,7 @@ Built with **React, TypeScript, TailwindCSS and Axios**, this app focuses on cle
 
 **🎥 Live Demo**
 
-cinemiser.vercel.app
+[cinemiser.vercel.app](https://cinemiser.vercel.app/)
 
 ---
 
