@@ -214,7 +214,7 @@ function App() {
                   className="w-full"
                 />
                 <p className="text-[11px] text-slate-500">
-                  From 0 to 10 (TMDB score)
+                  Choose the minimum rating (0-10)
                 </p>
               </div>
 
@@ -234,7 +234,7 @@ function App() {
                   className="w-full"
                 />
                 <p className="text-[11px] text-slate-500">
-                  Shorter films → slide left
+                  Shorter ← Runtime → Longer
                 </p>
               </div>
 
@@ -257,7 +257,7 @@ function App() {
                   <option value="10">Last 10 years</option>
                 </select>
                 <p className="text-[11px] text-slate-500">
-                  We convert this to a date for TMDB.
+                  Shows movies released within your selected range.
                 </p>
               </div>
             </div>
