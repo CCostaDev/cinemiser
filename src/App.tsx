@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from "react";
+import * as Slider from "@radix-ui/react-slider";
 import {
   getGenres,
   discoverMovies,
@@ -10,7 +11,7 @@ function App() {
   const [genres, setGenres] = useState<{ id: number; name: string }[]>([]);
   const [selectedGenreIds, setSelectedGenreIds] = useState<number[]>([]);
   const [minRating, setMinRating] = useState(7);
-  const [maxRuntime, setMaxRuntime] = useState(120);
+  const [runtimeRange, setRuntimeRange] = useState<[number, number]>([0, 240]);
   const [yearsBack, setYearsBack] = useState<"any" | "1" | "3" | "5" | "10">(
     "any"
   );
@@ -79,10 +80,17 @@ function App() {
         fromDate = past.toISOString().slice(0, 10); // the first 10 chars = date
       }
 
+      const [rawMin, rawMax] = runtimeRange;
+      const minRuntime = Math.min(rawMin, rawMax);
+      const maxRuntime = Math.max(rawMin, rawMax);
+
+      console.log("Runtime filters going to TMDB:", { minRuntime, maxRuntime });
+
       // 3. call TMDB discover
       const data = await discoverMovies({
         withGenres,
         minRating,
+        minRuntime,
         maxRuntime,
         fromDate,
       });
@@ -97,12 +105,45 @@ function App() {
         return;
       }
 
-      // 4. pick a random movie from the results
-      const randomIndex = Math.floor(Math.random() * results.length);
-      const randomMovie = results[randomIndex];
+      // 4. Try a few candidates until one fits the runtime range
+      const maxAttempts = Math.min(10, results.length);
+      let chosen: MovieSummary | null = null;
+      let chosenDetails: any | null = null;
 
-      // 5. fetch details
-      const details = await getMovieDetails(randomMovie.id);
+      for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        const randomIndex = Math.floor(Math.random() * results.length);
+        const candidate = results[randomIndex];
+
+        const details = await getMovieDetails(candidate.id);
+        const runtime = details.runtime as number | null;
+
+        // If TMDB has no runtime, or it's inside the range, accept it
+        if (!runtime || (runtime >= minRuntime && runtime <= maxRuntime)) {
+          console.log(`Picked movie after ${attempt + 1} attempt(s)`);
+
+          chosen = candidate;
+          chosenDetails = details;
+          break;
+        } else {
+          console.warn("Discarding movie outside runtime range:", {
+            title: details.title,
+            runtime,
+            minRuntime,
+            maxRuntime,
+          });
+        }
+      }
+
+      if (!chosen || !chosenDetails) {
+        setMovie(null);
+        setError(
+          "Couldn't find a movie in that runtime range. Try widening it a bit."
+        );
+        return;
+      }
+
+      const randomMovie = chosen;
+      const details = chosenDetails;
 
       // 5.1 director
       const director =
@@ -145,7 +186,7 @@ function App() {
   function resetFilters() {
     setSelectedGenreIds([]);
     setMinRating(7);
-    setMaxRuntime(120);
+    setRuntimeRange([0, 240]);
     setYearsBack("any");
     setMovie(null);
     setError(null);
@@ -222,37 +263,58 @@ function App() {
                   Minimum rating:{" "}
                   <span className="font-semibold">{minRating}</span>
                 </label>
-                <input
-                  type="range"
+                <Slider.Root
+                  className="relative flex items-center select-none touch-none w-full h-5"
+                  value={[minRating]}
                   min={0}
                   max={10}
                   step={0.5}
-                  value={minRating}
-                  onChange={(e) => setMinRating(Number(e.target.value))}
-                  className="w-full"
-                />
+                  onValueChange={([value]) => setMinRating(value)}
+                >
+                  <Slider.Track className="relative grow rounded-full bg-slate-700 h-[3px]">
+                    <Slider.Range className="absolute h-full bg-indigo-500 rounded-full" />
+                  </Slider.Track>
+                  <Slider.Thumb className="block w-4 h-4 bg-indigo-400 rounded-full shadow hover:bg-indigo-300 focus:outline-none" />
+                </Slider.Root>
+
                 <p className="text-[11px] text-slate-500">
                   Choose the minimum rating (0-10)
                 </p>
               </div>
 
-              {/* Max runtime */}
+              {/* Runtime range */}
               <div className="space-y-1">
                 <label className="text-xs font-medium text-slate-300">
-                  Max runtime (min):{" "}
-                  <span className="font-semibold">{maxRuntime}</span>
+                  Runtime (min):{" "}
+                  <span className="font-semibold">
+                    {runtimeRange[0]}-{runtimeRange[1]} min
+                  </span>
                 </label>
-                <input
-                  type="range"
-                  min={60}
+
+                <Slider.Root
+                  className="relative flex items-center select-none touch-none w-full h-5"
+                  value={runtimeRange}
+                  min={0}
                   max={240}
                   step={10}
-                  value={maxRuntime}
-                  onChange={(e) => setMaxRuntime(Number(e.target.value))}
-                  className="w-full"
-                />
+                  onValueChange={(values) => {
+                    const [a, b] = values as [number, number];
+                    const ordered: [number, number] = a <= b ? [a, b] : [b, a];
+                    setRuntimeRange(ordered);
+                  }}
+                >
+                  {/* Track */}
+                  <Slider.Track className="relative grow rounded-full bg-slate-700 h-[3px]">
+                    <Slider.Range className="absolute h-full bg-indigo-500 rounded-full" />
+                  </Slider.Track>
+
+                  {/* Thumbs */}
+                  <Slider.Thumb className="block w-4 h-4 bg-indigo-400 rounded-full shadow hover:bg-indigo-300 focus:outline-none" />
+                  <Slider.Thumb className="block w-4 h-4 bg-indigo-400 rounded-full shadow hover:bg-indigo-300 focus:outline-none" />
+                </Slider.Root>
+
                 <p className="text-[11px] text-slate-500">
-                  Shorter ← Runtime → Longer
+                  Choose your preferred runtime range
                 </p>
               </div>
 

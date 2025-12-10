@@ -3,6 +3,7 @@ import axios from "axios";
 type DiscoverFilters = {
   withGenres?: string; // "1,6,7"
   minRating?: number; // vote_average.gte
+  minRuntime?: number; // with_runtime.gte
   maxRuntime?: number; // with_runtime.lte
   fromDate?: string; // "YYYY-MM-DD"
 };
@@ -24,6 +25,7 @@ export async function discoverMovies(filters: DiscoverFilters) {
     params: {
       with_genres: filters.withGenres,
       "vote_average.gte": filters.minRating,
+      "with_runtime.gte": filters.minRuntime,
       "with_runtime.lte": filters.maxRuntime,
       "primary_release_date.gte": filters.fromDate,
       include_adult: false,
