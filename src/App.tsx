@@ -80,19 +80,21 @@ function App() {
         fromDate = past.toISOString().slice(0, 10); // the first 10 chars = date
       }
 
+      // 3. runtime range
       const [rawMin, rawMax] = runtimeRange;
       const minRuntime = Math.min(rawMin, rawMax);
       const maxRuntime = Math.max(rawMin, rawMax);
 
-      console.log("Runtime filters going to TMDB:", { minRuntime, maxRuntime });
+      console.log("Normal mode runtime filters:", { minRuntime, maxRuntime });
 
-      // 3. call TMDB discover
+      // 4. call TMDB discover
       const data = await discoverMovies({
         withGenres,
         minRating,
         minRuntime,
         maxRuntime,
         fromDate,
+        includeAdult: false,
       });
 
       const results: MovieSummary[] = data.results;
@@ -105,7 +107,7 @@ function App() {
         return;
       }
 
-      // 4. Try a few candidates until one fits the runtime range
+      // 5. Try a few candidates until one fits the runtime range (normal mode)
       const maxAttempts = Math.min(10, results.length);
       let chosen: MovieSummary | null = null;
       let chosenDetails: any | null = null;
@@ -183,6 +185,77 @@ function App() {
     }
   }
 
+  async function handleSurpriseMe() {
+    try {
+      setIsLoading(true);
+      setError(null);
+      setShowMore(false);
+      setImageLoaded(false);
+
+      // 1. First call to get total_pages
+      const firstPage = await discoverMovies({
+        includeAdult: true,
+      });
+
+      const totalPages = Math.min(firstPage.total_pages ?? 1, 500); // TMDB caps at 500
+      const randomPage =
+        totalPages > 1 ? Math.floor(Math.random() * totalPages) + 1 : 1;
+
+      //2. If randomPage is 1, reuse firstPage, else fetch that page
+      const data =
+        randomPage === 1
+          ? firstPage
+          : await discoverMovies({ includeAdult: true, page: randomPage });
+
+      const results: MovieSummary[] = data.results;
+
+      if (!results || results.length === 0) {
+        setMovie(null);
+        setError("No movies found. Please try again.");
+        return;
+      }
+
+      //3. Pick a random movie from that random page
+      const randomIndex = Math.floor(Math.random() * results.length);
+      const randomMovie = results[randomIndex];
+
+      //4. Enrich with details (same as in handleFindMovie)
+      const details = await getMovieDetails(randomMovie.id);
+
+      const director =
+        details.credits?.crew?.find((person: any) => person.job === "Director")
+          ?.name ?? null;
+
+      const cast =
+        details.credits?.cast?.slice(0, 3).map((person: any) => person.name) ??
+        [];
+
+      const trailer = details.videos?.results?.find(
+        (video: any) => video.site === "YouTube" && video.type === "Trailer"
+      );
+      const trailerUrl = trailer
+        ? `https://www.youtube.com/watch?v=${trailer.key}`
+        : null;
+
+      const enrichedMovie: MovieSummary = {
+        ...randomMovie,
+        backdrop_path: details.backdrop_path ?? randomMovie.backdrop_path,
+        runtime: details.runtime,
+        tagline: details.tagline,
+        director,
+        cast,
+        trailerUrl,
+      };
+
+      setMovie(enrichedMovie);
+    } catch (err) {
+      console.error(err);
+      setError("Something went wrong while fetching a surprise movie.");
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
   function resetFilters() {
     setSelectedGenreIds([]);
     setMinRating(7);
@@ -234,12 +307,20 @@ function App() {
         <div className="mx-auto max-w-2xl space-y-6 text-center">
           <h1 className="text-3xl font-bold">Cinemiser 🎬</h1>
 
-          <button
-            onClick={handleFindMovie}
-            className="rounded-xl bg-indigo-500 px-4 py-2 text-sm font-medium text-white shadow-lg shadow-indigo-500/30 transition hover:bg-indigo-400"
-          >
-            Find a movie
-          </button>
+          <div className="flex flex-col gap-2 items-center justify-center sm:flex-row sm:gap-3 sm:justify-center">
+            <button
+              onClick={handleFindMovie}
+              className="rounded-xl bg-indigo-500 px-4 py-2 text-sm font-medium text-white shadow-lg shadow-indigo-500/30 transition hover:bg-indigo-400"
+            >
+              Find a movie
+            </button>
+            <button
+              onClick={handleSurpriseMe}
+              className="rounded-xl border border-indigo-500/60 px-4 py-2 text-sm font-medium text-indigo-200 bg-slate-900/60 hover:bg-slate-900"
+            >
+              Surprise me
+            </button>
+          </div>
 
           <section className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 md:p-5 space-y-4">
             <div className="flex items-center justify-between gap-2">

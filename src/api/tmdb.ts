@@ -6,6 +6,8 @@ type DiscoverFilters = {
   minRuntime?: number; // with_runtime.gte
   maxRuntime?: number; // with_runtime.lte
   fromDate?: string; // "YYYY-MM-DD"
+  includeAdult?: boolean; // surprise me button
+  page?: number; // randomness for surprise me button
 };
 
 const tmdb = axios.create({
@@ -28,9 +30,10 @@ export async function discoverMovies(filters: DiscoverFilters) {
       "with_runtime.gte": filters.minRuntime,
       "with_runtime.lte": filters.maxRuntime,
       "primary_release_date.gte": filters.fromDate,
-      include_adult: false,
+      include_adult: filters.includeAdult ?? false,
       language: "en-GB",
       sort_by: "popularity.desc",
+      page: filters.page,
     },
   });
 
